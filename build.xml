@@ -1,0 +1,128 @@
+<project name="CompGeom">
+
+    <!--
+    ====================================================================
+    ==                           attributes                           ==
+    ====================================================================
+    -->
+
+    <property name="author" value="Bart Kiers, bart@big-o.nl"/>
+    <property name="version" value="0.3"/>
+
+    <property name="src.dir" value="src"/>
+    <property name="build.dir" value="build"/>
+    <property name="lib.dir" value="lib"/>
+    <property name="log.dir" value="log"/>
+    <property name="api.doc.dir" value="doc/api"/>
+    <property name="main.class" value="compgeom.demos.DemosLauncher"/>
+
+    <property name="test.report.dir" value="${log.dir}/test-reports"/>
+    <property name="main.src.dir" value="${src.dir}/main"/>
+    <property name="test.src.dir" value="${src.dir}/test"/>
+    <property name="main.build.dir" value="${build.dir}/main"/>
+    <property name="test.build.dir" value="${build.dir}/test"/>
+    <property name="release.name" value="${ant.project.name}-${version}"/>
+    <property name="jar.location" value="${build.dir}/${release.name}.jar"/>
+
+    <!--
+    ====================================================================
+    ==                           classpath                            ==
+    ====================================================================
+    -->
+
+    <!-- classpath -->
+    <path id="class.path">
+        <fileset dir="${lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+        <pathelement location="${main.build.dir}"/>
+        <pathelement location="${test.build.dir}"/>
+    </path>
+
+    <!--
+    ====================================================================
+    ==                           targets                              ==
+    ====================================================================
+    -->
+
+    <!-- Initializes the output directories -->
+    <target name="init" description="Initializes the output directories">
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${log.dir}"/>
+        <mkdir dir="${api.doc.dir}"/>
+        <mkdir dir="${main.build.dir}"/>
+        <mkdir dir="${test.build.dir}"/>
+        <mkdir dir="${test.report.dir}"/>
+    </target>
+
+    <!-- Deletes build directories and old release files -->
+    <target name="clean" description="Deletes build directories">
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${log.dir}"/>
+        <delete includeemptydirs="true">
+            <fileset dir="${build.dir}" includes="**/*"/>
+            <fileset dir="${log.dir}" includes="**/*"/>
+        </delete>
+        <delete file="${release.name}.zip"/>
+    </target>
+
+    <!-- Compiles the source directory tree -->
+    <target name="compile" depends="init" description="Compiles the source directory tree">
+        <javac srcdir="${main.src.dir}" destdir="${main.build.dir}" classpathref="class.path" fork="yes"/>
+        <javac srcdir="${test.src.dir}" destdir="${test.build.dir}" classpathref="class.path" fork="yes"/>
+    </target>
+
+    <!-- Runs all the unit tests -->
+    <target name="test-all" depends="compile" description="Runs all the unit tests">
+        <junit printsummary="yes" fork="yes" haltonfailure="yes">
+            <classpath refid="class.path"/>
+            <formatter type="plain"/>
+            <batchtest fork="yes" todir="${test.report.dir}">
+                <fileset dir="${test.src.dir}">
+                    <include name="**/Test*.java"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <!-- Creates a JAR of all class files, excluding the unit tests -->
+    <target name="jar" depends="compile" description="Creates a JAR of all class files, excluding the unit tests">
+        <unzip src="${lib.dir}/antlr-runtime-3.2.jar" dest="${main.build.dir}">
+        </unzip>
+        <tstamp/>
+        <jar destfile="${jar.location}" whenmanifestonly="fail">
+            <fileset dir="${main.build.dir}">
+                <exclude name="**/*.html"/>
+            </fileset>
+            <manifest>
+                <attribute name="Built-By" value="${author}"/>
+                <attribute name="Built-On" value="${TODAY}"/>
+                <attribute name="Main-Class" value="${main.class}"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- Creates javadoc files, excluding the unit tests sources -->
+    <target name="javadoc" depends="init" description="Creates javadoc files, excluding the unit tests sources">
+        <mkdir dir="${api.doc.dir}"/>
+        <javadoc packagenames="compgeom.*"
+                 destdir="${api.doc.dir}"
+                 author="true"
+                 version="true"
+                 use="true"
+                 classpathref="class.path">
+            <packageset dir="${main.src.dir}">
+                <exclude name="compgeom/util/parser/**"/>                
+            </packageset>
+        </javadoc>
+    </target>
+
+    <!-- Creates a new release, zipped -->
+    <target name="release" depends="clean,test-all,javadoc,jar" description="Creates a new release, zipped">
+        <delete file="${release.name}.zip"/>
+        <zip destfile="${release.name}.zip"
+             basedir="."
+             excludes=".idea/**, *.iml, log/**, **/.**"/>
+    </target>
+
+</project>

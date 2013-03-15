@@ -3,9 +3,6 @@
 A computational geometry library using arbitrary-precision arithmetic where 
 possible, written in Java.
 
- * version: Version: 0.3
- * release date: 27-04-2010
- * contact: bart@big-o.nl
 
 ## How to build CompGeom
 
